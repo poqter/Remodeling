@@ -73,11 +73,48 @@ else:
 
 st.session_state.after_data = input_section("2️⃣ 제안 보장 내용", "after", st.session_state.before_data)
 
-# --- 비교 버튼 ---
-if st.button("📊 비교 시작"):
+# --- 사이드바 버튼 ---
+compare_trigger = st.sidebar.button("📊 비교 시작")
+
+# --- 비교 실행 ---
+if compare_trigger:
     before_data = st.session_state.before_data
     after_data = st.session_state.after_data
 
+    before_fee = parse_amount(before_data.get("총월보험료")) or 0
+    after_fee = parse_amount(after_data.get("총월보험료")) or 0
+    before_total = parse_amount(before_data.get("총납입보험료")) or 0
+    after_total = parse_amount(after_data.get("총납입보험료")) or 0
+    before_years = parse_amount(before_data.get("납입기간")) or 0
+    after_years = parse_amount(after_data.get("납입기간")) or 0
+
+    fee_diff = before_fee - after_fee
+    total_diff = before_total - after_total
+    year_diff = before_years - after_years
+
+    # 상단 평가 메시지
+    st.subheader("📌 리모델링 요약")
+    msg = ""
+    if fee_diff > 0:
+        msg += f"💸 월 보험료가 **{fee_diff:,}원 절감**되었습니다."
+    elif fee_diff < 0:
+        msg += f"📈 월 보험료가 **{abs(fee_diff):,}원 증가**했습니다."
+    else:
+        msg += "⚖️ 월 보험료는 변화가 없습니다."
+
+    if total_diff > 0:
+        msg += f" 총 납입 보험료는 **{total_diff:,}원 절감**됩니다."
+    elif total_diff < 0:
+        msg += f" 총 납입 보험료는 **{abs(total_diff):,}원 증가**합니다."
+
+    if year_diff > 0:
+        msg += f" 납입기간이 **{year_diff}년 단축**되었습니다."
+    elif year_diff < 0:
+        msg += f" 납입기간이 **{abs(year_diff)}년 연장**되었습니다."
+
+    st.success(msg)
+
+    # 항목 변화 요약
     st.subheader("✅ 보장 변화 요약")
     change_count = 0
     for group, items in bojang_groups.items():
@@ -95,27 +132,4 @@ if st.button("📊 비교 시작"):
                     change_count += 1
                     st.markdown(f"- **{item}**: {b} → {a}")
 
-    # 보험료 비교 평가
-    before_fee = parse_amount(before_data.get("총월보험료")) or 0
-    after_fee = parse_amount(after_data.get("총월보험료")) or 0
-    before_total = parse_amount(before_data.get("총납입보험료")) or 0
-    after_total = parse_amount(after_data.get("총납입보험료")) or 0
-
-    fee_diff = before_fee - after_fee
-    total_diff = before_total - after_total
-
-    st.markdown("---")
-    if fee_diff > 0:
-        msg = f"💸 월 보험료가 **{fee_diff:,}원 절감**되었습니다."
-    elif fee_diff < 0:
-        msg = f"📈 월 보험료가 **{abs(fee_diff):,}원 증가**했습니다."
-    else:
-        msg = "⚖️ 월 보험료는 변화가 없습니다."
-
-    if total_diff > 0:
-        msg += f" 총 납입 보험료는 **{total_diff:,}원 절감**됩니다."
-    elif total_diff < 0:
-        msg += f" 총 납입 보험료는 **{abs(total_diff):,}원 증가**합니다."
-
-    st.success(msg)
     st.caption(f"총 변화 항목 수: {change_count}개")

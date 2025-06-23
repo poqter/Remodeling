@@ -94,25 +94,27 @@ if compare_trigger:
 
     # 상단 평가 메시지
     st.subheader("📌 리모델링 요약")
-    msg = ""
+    msg_lines = []
+
     if fee_diff > 0:
-        msg += f"💸 월 보험료가 **{fee_diff:,}원 절감**되었습니다."
+        msg_lines.append(f"💸 **월 보험료가 {fee_diff:,}원 절감**되어 경제적입니다.")
     elif fee_diff < 0:
-        msg += f"📈 월 보험료가 **{abs(fee_diff):,}원 증가**했습니다."
+        msg_lines.append(f"📈 **월 보험료가 {abs(fee_diff):,}원 증가**했지만 보장 강화가 목적일 수 있습니다.")
     else:
-        msg += "⚖️ 월 보험료는 변화가 없습니다."
+        msg_lines.append("⚖️ **월 보험료는 동일**합니다.")
 
     if total_diff > 0:
-        msg += f" 총 납입 보험료는 **{total_diff:,}원 절감**됩니다."
+        msg_lines.append(f"📉 **총 납입 보험료도 {total_diff:,}원 줄어들어 효율적인 설계입니다.**")
     elif total_diff < 0:
-        msg += f" 총 납입 보험료는 **{abs(total_diff):,}원 증가**합니다."
+        msg_lines.append(f"📈 **총 납입 보험료가 {abs(total_diff):,}원 늘어났습니다. 보장 항목과 비교해볼 필요가 있습니다.**")
 
     if year_diff > 0:
-        msg += f" 납입기간이 **{year_diff}년 단축**되었습니다."
+        msg_lines.append(f"⏱️ **납입기간이 {year_diff}년 단축**되어 부담이 줄었습니다.")
     elif year_diff < 0:
-        msg += f" 납입기간이 **{abs(year_diff)}년 연장**되었습니다."
+        msg_lines.append(f"📆 **납입기간이 {abs(year_diff)}년 연장**되어 장기적인 플랜이 적용되었습니다.")
 
-    st.success(msg)
+    for m in msg_lines:
+        st.info(m)
 
     # 항목 변화 요약
     st.subheader("✅ 보장 변화 요약")

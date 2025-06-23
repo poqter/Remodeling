@@ -142,12 +142,12 @@ if compare_trigger:
     for m in msg_lines:
         st.info(m)
 
-    # 항목 변화 카드 시각화 (묶음 표시)
+    # 항목 변화 카드 시각화 (좌우 나눔 + 전체 펼침)
     st.subheader("✅ 보장 변화 요약")
-    change_group_cards = {}
+    col1, col2 = st.columns(2)
     total_change_count = 0
 
-    for group, items in bojang_groups.items():
+    for idx, (group, items) in enumerate(bojang_groups.items()):
         group_cards = []
         for item in items:
             b = before_data.get(item)
@@ -158,7 +158,8 @@ if compare_trigger:
                     group_cards.append(card_html)
                     total_change_count += 1
         if group_cards:
-            with st.expander(f"📂 {group} 변화 항목 ({len(group_cards)}개)", expanded=False):
+            container = col1 if idx % 2 == 0 else col2
+            with container.expander(f"📂 {group} 변화 항목 ({len(group_cards)}개)", expanded=True):
                 for html in group_cards:
                     st.markdown(html, unsafe_allow_html=True)
 

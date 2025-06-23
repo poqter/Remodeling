@@ -45,7 +45,7 @@ def input_section(title, key_prefix, default_data=None):
     result["총납입보험료"] = st.sidebar.text_input(f"{title} - 총 납입 보험료 (원, 선택)", value=get_default_value("총납입보험료"), key=f"{key_prefix}_총납입")
 
     for group, items in bojang_groups.items():
-        with st.sidebar.expander(f"📂 {group}"):
+         with st.sidebar.expander(f"📂 {group}", expanded=True):
             for item in items:
                 full_key = f"{key_prefix}_{item}"
                 default_value = ""

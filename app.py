@@ -5,7 +5,7 @@ import re
 # --- 앱 기본 설정 ---
 st.set_page_config(page_title="보험 리모델링 전후 비교", layout="wide")
 
-# --- 그룹별 항목 정의 (입력 우선순위 변경: 사망 → 암 → 뇌/심장 순서) ---
+# --- 그룹별 항목 정의 ---
 bojang_groups = {
     "사망": ["일반사망", "질병사망", "재해(상해)사망"],
     "암": ["통합암", "일반암", "유사암", "암치료"],
@@ -30,41 +30,13 @@ def parse_amount(text):
     except:
         return None
 
-# --- 카드 시각화 함수 ---
-def display_change_card(item, before, after):
-    if isinstance(before, dict) and isinstance(after, dict):
-        b_amt = before.get("금액") or 0
-        a_amt = after.get("금액") or 0
-        if b_amt != a_amt:
-            color = "#d4f4dd" if a_amt > b_amt else "#ffe1e1"
-            diff = a_amt - b_amt
-            return f"""
-                <div style='background-color:{color}; padding:15px; border-radius:10px; margin:10px;'>
-                    <strong>{item}</strong><br>
-                    {b_amt:,}만원 → <strong>{a_amt:,}만원</strong><br>
-                    <span style='color:gray;'>({'보장 강화' if diff > 0 else '보장 축소'})</span>
-                </div>
-            """
-    elif isinstance(before, str) and isinstance(after, str):
-        if before != after:
-            color = "#d4f4dd" if after == "예" else "#ffe1e1"
-            return f"""
-                <div style='background-color:{color}; padding:15px; border-radius:10px; margin:10px;'>
-                    <strong>{item}</strong><br>
-                    {before} → <strong>{after}</strong>
-                </div>
-            """
-    return None
-
 # --- 입력 폼 구성 ---
 def input_section(title, key_prefix, default_data=None):
     st.sidebar.subheader(title)
     result = {}
 
     def get_default_value(field):
-        if default_data and field in default_data:
-            return default_data.get(field, "")
-        return ""
+        return default_data.get(field, "") if default_data and field in default_data else ""
 
     result["총월보험료"] = st.sidebar.text_input(f"{title} - 총 월 보험료(원)", value=get_default_value("총월보험료"), key=f"{key_prefix}_월보험료")
     result["납입기간"] = st.sidebar.text_input(f"{title} - 납입기간(년)", value=get_default_value("납입기간"), key=f"{key_prefix}_납입기간")
@@ -89,7 +61,7 @@ def input_section(title, key_prefix, default_data=None):
                     result[item] = {"금액": parse_amount(amt)}
     return result
 
-# --- 기존/제안 보장 입력 ---
+# --- 타이틀 및 입력폼 ---
 st.title("🔄 보험 리모델링 전후 비교 도구")
 
 if "before_data" not in st.session_state:
@@ -99,10 +71,9 @@ else:
 
 st.session_state.after_data = input_section("2️⃣ 제안 보장 내용", "after", st.session_state.before_data)
 
-# --- 사이드바 버튼 ---
+# --- 비교 실행 ---
 compare_trigger = st.sidebar.button("📊 비교 시작")
 
-# --- 비교 실행 ---
 if compare_trigger:
     before_data = st.session_state.before_data
     after_data = st.session_state.after_data
@@ -142,19 +113,27 @@ if compare_trigger:
     for m in msg_lines:
         st.info(m)
 
-    # 항목 변화 카드 시각화
-    st.subheader("✅ 보장 변화 요약")
-    col1, col2 = st.columns(2)
-    change_count = 0
-
-    for group in bojang_groups:
-        for item in bojang_groups[group]:
+    # 항목 변화 요약 텍스트 출력
+    st.subheader("✅ 보장 변화 텍스트 요약")
+    summary_lines = []
+    for group, items in bojang_groups.items():
+        for item in items:
             b = before_data.get(item)
             a = after_data.get(item)
             if b != a:
-                card_html = display_change_card(item, b, a)
-                if card_html:
-                    (col1 if change_count % 2 == 0 else col2).markdown(card_html, unsafe_allow_html=True)
-                    change_count += 1
+                if isinstance(b, dict) and isinstance(a, dict):
+                    b_amt = b.get("금액") or 0
+                    a_amt = a.get("금액") or 0
+                    diff = a_amt - b_amt
+                    if diff > 0:
+                        summary_lines.append(f"🔼 {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 강화)")
+                    elif diff < 0:
+                        summary_lines.append(f"🔽 {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 축소)")
+                elif isinstance(b, str) and isinstance(a, str):
+                    summary_lines.append(f"🔁 {item}: {b} → {a}")
 
-    st.caption(f"총 변화 항목 수: {change_count}개")
+    if summary_lines:
+        for line in summary_lines:
+            st.markdown(f"- {line}")
+
+    st.caption(f"총 변화 항목 수: {len(summary_lines)}개")

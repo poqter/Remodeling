@@ -45,7 +45,7 @@ def input_section(title, key_prefix, default_data=None):
     result["총납입보험료"] = st.sidebar.text_input(f"{title} - 총 납입 보험료 (원, 선택)", value=get_default_value("총납입보험료"), key=f"{key_prefix}_총납입")
 
     for group, items in bojang_groups.items():
-        with st.sidebar.expander(f"\U0001F4C2 {group}"):
+        with st.sidebar.expander(f"📂 {group}"):
             for item in items:
                 full_key = f"{key_prefix}_{item}"
                 default_value = ""
@@ -64,7 +64,7 @@ def input_section(title, key_prefix, default_data=None):
     return result
 
 # --- 기존/제안 보장 입력 ---
-st.title("\U0001F501 보험 리모델링 전후 비교 도구")
+st.title("🔁 보험 리모델링 전후 비교 도구")
 
 if "before_data" not in st.session_state:
     st.session_state.before_data = input_section("1️⃣ 기존 보장 내용", "before")
@@ -74,7 +74,7 @@ else:
 st.session_state.after_data = input_section("2️⃣ 제안 보장 내용", "after", st.session_state.before_data)
 
 # --- 비교 실행 ---
-if st.sidebar.button("\U0001F4CA 비교 시작"):
+if st.sidebar.button("📊 비교 시작"):
     before_data = st.session_state.before_data
     after_data = st.session_state.after_data
 
@@ -89,9 +89,9 @@ if st.sidebar.button("\U0001F4CA 비교 시작"):
     total_diff = before_total - after_total
     year_diff = before_years - after_years
 
-    # ✅ 보장 변화 요약 - 그룹별 2열 출력 (1열 먼저 출력 후 2열)
+    # ✅ 보장 변화 요약 분석
     summary_dict = {}
-    강화, 축소, 변경 = 0, 0, 0
+    강화, 축소, 신규, 삭제 = 0, 0, 0, 0
 
     for group, items in bojang_groups.items():
         group_lines = []
@@ -99,26 +99,29 @@ if st.sidebar.button("\U0001F4CA 비교 시작"):
             b = before_data.get(item)
             a = after_data.get(item)
             if b != a:
-                if isinstance(b, dict) and isinstance(a, dict):
+                if not b and a:
+                    group_lines.append(f"🟢 {item}: 신규 추가")
+                    신규 += 1
+                elif b and not a:
+                    group_lines.append(f"🔴 {item}: 삭제")
+                    삭제 += 1
+                elif isinstance(b, dict) and isinstance(a, dict):
                     b_amt = b.get("금액") or 0
                     a_amt = a.get("금액") or 0
                     diff = a_amt - b_amt
                     if diff > 0:
-                        group_lines.append(f"\U0001F53C {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 강화)")
+                        group_lines.append(f"🟦 {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 강화)")
                         강화 += 1
                     elif diff < 0:
-                        group_lines.append(f"\U0001F53D {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 축소)")
+                        group_lines.append(f"🟨 {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 축소)")
                         축소 += 1
-                elif isinstance(b, str) and isinstance(a, str):
-                    group_lines.append(f"\U0001F501 {item}: {b} → {a}")
-                    변경 += 1
         if group_lines:
             summary_dict[group] = group_lines
 
-    총변화 = sum(len(v) for v in summary_dict.values())
+    총변화 = 강화 + 축소 + 신규 + 삭제
 
-    # 상단 평가 메시지
-    st.subheader("\U0001F4CC 리모델링 요약")
+    # 상단 요약
+    st.subheader("📌 리모델링 요약")
     msg_lines = []
 
     if fee_diff > 0:
@@ -136,14 +139,16 @@ if st.sidebar.button("\U0001F4CA 비교 시작"):
     if year_diff > 0:
         msg_lines.append(f"⏱️ **납입기간이 {year_diff}년 단축**되어 부담이 줄었습니다.")
     elif year_diff < 0:
-        msg_lines.append(f"\U0001F4C6 **납입기간이 {abs(year_diff)}년 연장**되어 장기적인 플랜이 적용되었습니다.")
+        msg_lines.append(f"📆 **납입기간이 {abs(year_diff)}년 연장**되어 장기적인 플랜이 적용되었습니다.")
 
-    msg_lines.append(f"\n🛠️ **총 변화 항목: {총변화}개**  |  🔼 보장 강화: {강화}개  |  🔽 보장 축소: {축소}개  |  🔁 실손/형태 변경: {변경}개")
+    msg_lines.append(f"\n📊 **총 변화 항목: {총변화}개**")
+    msg_lines.append(f"🟦 보장 강화: {강화}개  |  🟨 보장 축소: {축소}개")
+    msg_lines.append(f"🟢 신규 추가: {신규}개  |  🔴 삭제: {삭제}개")
 
     for m in msg_lines:
         st.info(m)
 
-    # 보장 변화 요약 출력
+    # 보장 변화 요약 - 1열 우선 출력
     st.subheader("✅ 보장 변화 요약")
     if summary_dict:
         left_col, right_col = st.columns(2)
@@ -152,6 +157,6 @@ if st.sidebar.button("\U0001F4CA 비교 시작"):
         for i in range(len(groups)):
             group, lines = groups[i]
             with (left_col if i < half else right_col):
-                st.markdown(f"#### \U0001F4C2 {group}")
+                st.markdown(f"#### 📂 {group}")
                 for line in lines:
                     st.markdown(f"- {line}")

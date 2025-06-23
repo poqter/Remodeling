@@ -151,24 +151,32 @@ if st.sidebar.button("📊 비교 시작"):
     for m in msg_lines:
         st.info(m)
 
-    ...
     st.subheader("✅ 보장 변화 요약")
     if summary_dict:
         left_col, right_col = st.columns(2)
-        groups = list(summary_dict.items())
-        # 1열을 먼저 채우고 2열로 넘어가도록 분할
-        half = (len(groups) + 1) // 2
-        left_groups = groups[:half]
-        right_groups = groups[half:]
+        all_groups = list(summary_dict.items())
+
+        # 항목 수 기준으로 1열을 우선 채우고 2열로 넘김
+        left_items, right_items = [], []
+        total_lines = sum(len(lines) for lines in summary_dict.values())
+        cutoff = (total_lines + 1) // 2
+        line_count = 0
+
+        for group, lines in all_groups:
+            if line_count < cutoff:
+                left_items.append((group, lines))
+                line_count += len(lines)
+            else:
+                right_items.append((group, lines))
 
         with left_col:
-            for group, lines in left_groups:
+            for group, lines in left_items:
                 st.markdown(f"#### 📂 {group}")
                 for line in lines:
                     st.markdown(f"- {line}")
 
         with right_col:
-            for group, lines in right_groups:
+            for group, lines in right_items:
                 st.markdown(f"#### 📂 {group}")
                 for line in lines:
                     st.markdown(f"- {line}")

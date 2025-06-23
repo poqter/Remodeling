@@ -45,7 +45,7 @@ def input_section(title, key_prefix, default_data=None):
     result["총납입보험료"] = st.sidebar.text_input(f"{title} - 총 납입 보험료 (원, 선택)", value=get_default_value("총납입보험료"), key=f"{key_prefix}_총납입")
 
     for group, items in bojang_groups.items():
-        with st.sidebar.expander(f"📂 {group}"):
+        with st.sidebar.expander(f"\U0001F4C2 {group}"):
             for item in items:
                 full_key = f"{key_prefix}_{item}"
                 default_value = ""
@@ -64,7 +64,7 @@ def input_section(title, key_prefix, default_data=None):
     return result
 
 # --- 기존/제안 보장 입력 ---
-st.title("🔄 보험 리모델링 전후 비교 도구")
+st.title("\U0001F501 보험 리모델링 전후 비교 도구")
 
 if "before_data" not in st.session_state:
     st.session_state.before_data = input_section("1️⃣ 기존 보장 내용", "before")
@@ -74,7 +74,7 @@ else:
 st.session_state.after_data = input_section("2️⃣ 제안 보장 내용", "after", st.session_state.before_data)
 
 # --- 비교 실행 ---
-if st.sidebar.button("📊 비교 시작"):
+if st.sidebar.button("\U0001F4CA 비교 시작"):
     before_data = st.session_state.before_data
     after_data = st.session_state.after_data
 
@@ -90,30 +90,30 @@ if st.sidebar.button("📊 비교 시작"):
     year_diff = before_years - after_years
 
     # 상단 평가 메시지
-    st.subheader("📌 리모델링 요약")
+    st.subheader("\U0001F4CC 리모델링 요약")
     msg_lines = []
 
     if fee_diff > 0:
-        msg_lines.append(f"💸 **월 보험료가 {fee_diff:,}원 절감**되어 경제적입니다.")
+        msg_lines.append(f"\U0001F4B8 **월 보험료가 {fee_diff:,}원 절감**되어 경제적입니다.")
     elif fee_diff < 0:
-        msg_lines.append(f"📈 **월 보험료가 {abs(fee_diff):,}원 증가**했지만 보장 강화가 목적일 수 있습니다.")
+        msg_lines.append(f"\U0001F4C8 **월 보험료가 {abs(fee_diff):,}원 증가**했지만 보장 강화가 목적일 수 있습니다.")
     else:
         msg_lines.append("⚖️ **월 보험료는 동일**합니다.")
 
     if total_diff > 0:
-        msg_lines.append(f"📉 **총 납입 보험료도 {total_diff:,}원 줄어들어 효율적인 설계입니다.**")
+        msg_lines.append(f"\U0001F4C9 **총 납입 보험료도 {total_diff:,}원 줄어들어 효율적인 설계입니다.**")
     elif total_diff < 0:
-        msg_lines.append(f"📈 **총 납입 보험료가 {abs(total_diff):,}원 늘어났습니다. 보장 항목과 비교해볼 필요가 있습니다.**")
+        msg_lines.append(f"\U0001F4C8 **총 납입 보험료가 {abs(total_diff):,}원 늘어났습니다. 보장 항목과 비교해볼 필요가 있습니다.**")
 
     if year_diff > 0:
         msg_lines.append(f"⏱️ **납입기간이 {year_diff}년 단축**되어 부담이 줄었습니다.")
     elif year_diff < 0:
-        msg_lines.append(f"📆 **납입기간이 {abs(year_diff)}년 연장**되어 장기적인 플랜이 적용되었습니다.")
+        msg_lines.append(f"\U0001F4C6 **납입기간이 {abs(year_diff)}년 연장**되어 장기적인 플랜이 적용되었습니다.")
 
     for m in msg_lines:
         st.info(m)
 
-    # ✅ 보장 변화 요약 - 그룹별 2열 출력
+    # ✅ 보장 변화 요약 - 그룹별 2열 출력 (1열 먼저 출력 후 2열)
     st.subheader("✅ 보장 변화 요약")
     summary_dict = {}
 
@@ -128,19 +128,22 @@ if st.sidebar.button("📊 비교 시작"):
                     a_amt = a.get("금액") or 0
                     diff = a_amt - b_amt
                     if diff > 0:
-                        group_lines.append(f"🔼 {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 강화)")
+                        group_lines.append(f"\U0001F53C {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 강화)")
                     elif diff < 0:
-                        group_lines.append(f"🔽 {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 축소)")
+                        group_lines.append(f"\U0001F53D {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 축소)")
                 elif isinstance(b, str) and isinstance(a, str):
-                    group_lines.append(f"🔁 {item}: {b} → {a}")
+                    group_lines.append(f"\U0001F501 {item}: {b} → {a}")
         if group_lines:
             summary_dict[group] = group_lines
 
     if summary_dict:
         left_col, right_col = st.columns(2)
-        for idx, (group, lines) in enumerate(summary_dict.items()):
-            with (left_col if idx % 2 == 0 else right_col):
-                st.markdown(f"#### 📂 {group}")
+        groups = list(summary_dict.items())
+        half = (len(groups) + 1) // 2
+        for i in range(len(groups)):
+            group, lines = groups[i]
+            with (left_col if i < half else right_col):
+                st.markdown(f"#### \U0001F4C2 {group}")
                 for line in lines:
                     st.markdown(f"- {line}")
 

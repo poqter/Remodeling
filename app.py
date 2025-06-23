@@ -35,10 +35,10 @@ def input_section(title, key_prefix, default_data=None):
     st.sidebar.subheader(title)
     result = {}
 
-    # 총 월 보험료, 납입기간, 총 납입 보험료
-    result["총월보험료"] = st.sidebar.number_input(f"{title} - 총 월 보험료(만원)", min_value=0, step=1, key=f"{key_prefix}_월보험료")
-    result["납입기간"] = st.sidebar.text_input(f"{title} - 납입기간", key=f"{key_prefix}_납입기간")
-    result["총납입보험료"] = st.sidebar.text_input(f"{title} - 총 납입 보험료 (선택)", key=f"{key_prefix}_총납입")
+    # 총 월 보험료 (원), 납입기간 (년), 총 납입 보험료 (선택, 원 단위)
+    result["총월보험료"] = st.sidebar.number_input(f"{title} - 총 월 보험료(원)", min_value=0, step=1000, key=f"{key_prefix}_월보험료")
+    result["납입기간"] = st.sidebar.number_input(f"{title} - 납입기간(년)", min_value=0, step=1, key=f"{key_prefix}_납입기간")
+    result["총납입보험료"] = st.sidebar.text_input(f"{title} - 총 납입 보험료 (원, 선택)", key=f"{key_prefix}_총납입")
 
     for group, items in bojang_groups.items():
         with st.sidebar.expander(f"📂 {group}"):
@@ -119,15 +119,15 @@ if "before_data" in st.session_state and "after_data" in st.session_state:
 
     평가 = ""
     if fee_diff < 0:
-        평가 += f"💰 월 보험료가 {abs(fee_diff)}만원 줄었어요!  "
+        평가 += f"💰 월 보험료가 {abs(fee_diff):,}원 줄었어요!  "
     elif fee_diff > 0:
-        평가 += f"📈 월 보험료가 {fee_diff}만원 증가했어요.  "
+        평가 += f"📈 월 보험료가 {fee_diff:,}원 증가했어요.  "
     else:
         평가 += "⚖️ 월 보험료는 동일합니다.  "
 
     if total_before and total_after:
         if total_after < total_before:
-            평가 += f"📉 총 납입 보험료는 {total_before - total_after}만원 절감되었습니다.  "
+            평가 += f"📉 총 납입 보험료는 {total_before - total_after:,}원 절감되었습니다.  "
 
     평가 += f"🛡️ 강화된 항목: {강화수}개, 🔻 축소된 항목: {축소수}개"
     st.success(평가)

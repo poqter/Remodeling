@@ -3,7 +3,7 @@ import pandas as pd
 import re
 
 # --- 앱 기본 설정 ---
-st.set_page_config(page_title="보험 리모델링 전후 비교", layout="wide")
+st.set_page_config(page_title="보험 리모델링 전/후 비교", layout="wide")
 
 # --- 그룹별 항목 정의 ---
 bojang_groups = {
@@ -64,7 +64,7 @@ def input_section(title, key_prefix, default_data=None):
     return result
 
 # --- 기존/제안 보장 입력 ---
-st.title("🔁 보험 리모델링 전후 비교 도구")
+st.title("🔁 보험 리모델링 전/후 비교")
 
 if "before_data" not in st.session_state:
     st.session_state.before_data = input_section("1️⃣ 기존 보장 내용", "before")

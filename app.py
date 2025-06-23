@@ -35,10 +35,17 @@ def input_section(title, key_prefix, default_data=None):
     st.sidebar.subheader(title)
     result = {}
 
-    # 총 월 보험료 (원), 납입기간 (년), 총 납입 보험료 (선택, 원 단위)
-    result["총월보험료"] = st.sidebar.text_input(f"{title} - 총 월 보험료(원)", value="", key=f"{key_prefix}_월보험료")
-    result["납입기간"] = st.sidebar.text_input(f"{title} - 납입기간(년)", value="", key=f"{key_prefix}_납입기간")
-    result["총납입보험료"] = st.sidebar.text_input(f"{title} - 총 납입 보험료 (원, 선택)", value="", key=f"{key_prefix}_총납입")
+    # 총 월 보험료 및 납입기간: 기존 보장 내용을 제안 보장에 복사
+    if default_data:
+        default_fee = default_data.get("총월보험료", "")
+        default_term = default_data.get("납입기간", "")
+    else:
+        default_fee = ""
+        default_term = ""
+
+    result["총월보험료"] = st.sidebar.text_input(f"{title} - 총 월 보험료(원)", value=default_fee, key=f"{key_prefix}_월보험료")
+    result["납입기간"] = st.sidebar.text_input(f"{title} - 납입기간(년)", value=default_term, key=f"{key_prefix}_납입기간")
+    result["총납입보험료"] = st.sidebar.text_input(f"{title} - 총 납입 보험료 (원, 선택)", value=default_data.get("총납입보험료", "") if default_data else "", key=f"{key_prefix}_총납입")
 
     for group, items in bojang_groups.items():
         with st.sidebar.expander(f"📂 {group}"):

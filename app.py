@@ -7,9 +7,9 @@ st.set_page_config(page_title="보험 리모델링 전후 비교", layout="wide"
 
 # --- 그룹별 항목 정의 ---
 bojang_groups = {
-    "사망": ["일반사망", "질병사망", "재해(상해)사망"],
     "암": ["통합암", "일반암", "유사암", "암치료"],
     "뇌/심장": ["뇌혈관", "뇌졸중", "뇌출혈", "초기심장질환", "허혈성심장질환", "급성심근경색증"],
+    "사망": ["일반사망", "질병사망", "재해(상해)사망"],
     "장해": ["질병후유장해", "재해(상해)장해"],
     "수술": ["질병수술", "질병종수술", "상해수술", "상해종수술"],
     "입원": ["질병입원", "상해입원", "간병인"],
@@ -118,29 +118,6 @@ if compare_trigger:
     total_diff = before_total - after_total
     year_diff = before_years - after_years
 
-    increased, decreased, added, removed = 0, 0, 0, 0
-    all_items = [item for group in bojang_groups.values() for item in group]
-
-    for item in all_items:
-        b = before_data.get(item)
-        a = after_data.get(item)
-        if b == a:
-            continue
-        if b and not a:
-            removed += 1
-        elif not b and a:
-            added += 1
-        elif isinstance(b, dict) and isinstance(a, dict):
-            if a.get("금액", 0) > b.get("금액", 0):
-                increased += 1
-            elif a.get("금액", 0) < b.get("금액", 0):
-                decreased += 1
-        elif isinstance(b, str) and isinstance(a, str):
-            if b == "아니오" and a == "예":
-                increased += 1
-            elif b == "예" and a == "아니오":
-                decreased += 1
-
     # 상단 평가 메시지
     st.subheader("📌 리모델링 요약")
     msg_lines = []
@@ -152,20 +129,15 @@ if compare_trigger:
     else:
         msg_lines.append("⚖️ **월 보험료는 동일**합니다.")
 
+    if total_diff > 0:
+        msg_lines.append(f"📉 **총 납입 보험료도 {total_diff:,}원 줄어들어 효율적인 설계입니다.**")
+    elif total_diff < 0:
+        msg_lines.append(f"📈 **총 납입 보험료가 {abs(total_diff):,}원 늘어났습니다. 보장 항목과 비교해볼 필요가 있습니다.**")
+
     if year_diff > 0:
         msg_lines.append(f"⏱️ **납입기간이 {year_diff}년 단축**되어 부담이 줄었습니다.")
     elif year_diff < 0:
         msg_lines.append(f"📆 **납입기간이 {abs(year_diff)}년 연장**되어 장기적인 플랜이 적용되었습니다.")
-
-    if total_diff > 0:
-        msg_lines.append(f"📉 **총 납입 보험료도 {total_diff:,}원 줄어들어 효율적인 설계입니다.**")
-        if before_fee > 0:
-            approx_years = round(total_diff / before_fee / 12)
-            msg_lines.append(f"🧮 **이는 약 {approx_years}년치 보험료에 해당하는 차이입니다.**")
-    elif total_diff < 0:
-        msg_lines.append(f"📈 **총 납입 보험료가 {abs(total_diff):,}원 늘어났습니다. 보장 항목과 비교해볼 필요가 있습니다.")
-
-    msg_lines.append(f"🔎 보장 변화 항목: 🟢 강화 {increased}개 | 🔴 축소 {decreased}개 | 🆕 추가 {added}개 | ❌ 삭제 {removed}개")
 
     for m in msg_lines:
         st.info(m)

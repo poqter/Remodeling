@@ -3,7 +3,7 @@ import pandas as pd
 import re
 
     # --- 앱 기본 설정 ---
-    st.set_page_config(page_title="보험 리모델링 전/후 비교", layout="wide")
+st.set_page_config(page_title="보험 리모델링 전/후 비교", layout="wide")
 
     # --- 그룹별 항목 정의 ---
     bojang_groups = {

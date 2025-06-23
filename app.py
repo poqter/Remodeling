@@ -118,7 +118,6 @@ if compare_trigger:
     total_diff = before_total - after_total
     year_diff = before_years - after_years
 
-    # 항목 변화 요약
     increased, decreased, added, removed = 0, 0, 0, 0
     all_items = [item for group in bojang_groups.values() for item in group]
 
@@ -164,7 +163,7 @@ if compare_trigger:
             approx_years = round(total_diff / before_fee / 12)
             msg_lines.append(f"🧮 **이는 약 {approx_years}년치 보험료에 해당하는 차이입니다.**")
     elif total_diff < 0:
-        msg_lines.append(f"📈 **총 납입 보험료가 {abs(total_diff):,}원 늘어났습니다. 보장 항목과 비교해볼 필요가 있습니다.**")
+        msg_lines.append(f"📈 **총 납입 보험료가 {abs(total_diff):,}원 늘어났습니다. 보장 항목과 비교해볼 필요가 있습니다.")
 
     msg_lines.append(f"🔎 보장 변화 항목: 🟢 강화 {increased}개 | 🔴 축소 {decreased}개 | 🆕 추가 {added}개 | ❌ 삭제 {removed}개")
 

@@ -138,8 +138,15 @@ if st.sidebar.button("📊 비교 시작"):
 
     if total_diff > 0:
         msg_lines.append(f"📉 **총 납입 보험료도 {total_diff:,}원 줄어들어 효율적인 설계입니다.**")
+        if after_fee > 0:
+            months = total_diff // after_fee
+            years = months // 12
+            remainder_months = months % 12
+            duration = f"약 {years}년 {remainder_months}개월" if years > 0 else f"약 {remainder_months}개월"
+            msg_lines.append(f"💡 이 금액은 현재 보험료 기준으로 {duration} 동안 납입 가능한 금액입니다.")
     elif total_diff < 0:
         msg_lines.append(f"📈 **총 납입 보험료가 {abs(total_diff):,}원 늘어났습니다. 보장 항목과 비교해볼 필요가 있습니다.**")
+
 
     if year_diff > 0:
         msg_lines.append(f"⏱️ **납입기간이 {year_diff}년 단축**되어 부담이 줄었습니다.")

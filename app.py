@@ -5,11 +5,11 @@ import re
 # --- 앱 기본 설정 ---
 st.set_page_config(page_title="보험 리모델링 전후 비교", layout="wide")
 
-# --- 그룹별 항목 정의 (입력 우선순위 변경: 사망 → 암 → 뇌/심장 순서) ---
+# --- 그룹별 항목 정의 ---
 bojang_groups = {
-    "사망": ["일반사망", "질병사망", "재해(상해)사망"],
     "암": ["통합암", "일반암", "유사암", "암치료"],
     "뇌/심장": ["뇌혈관", "뇌졸중", "뇌출혈", "초기심장질환", "허혈성심장질환", "급성심근경색증"],
+    "사망": ["일반사망", "질병사망", "재해(상해)사망"],
     "장해": ["질병후유장해", "재해(상해)장해"],
     "수술": ["질병수술", "질병종수술", "상해수술", "상해종수술"],
     "입원": ["질병입원", "상해입원", "간병인"],
@@ -39,19 +39,19 @@ def display_change_card(item, before, after):
             color = "#d4f4dd" if a_amt > b_amt else "#ffe1e1"
             diff = a_amt - b_amt
             return f"""
-                <div style='background-color:{color}; padding:8px 12px; border-radius:8px; margin:6px; line-height:1.4;'>
-                    <div><strong>{item}</strong></div>
-                    <div>{b_amt:,}만원 → <strong>{a_amt:,}만원</strong></div>
-                    <div style='color:gray; font-size:0.9em;'>({'보장 강화' if diff > 0 else '보장 축소'})</div>
+                <div style='background-color:{color}; padding:15px; border-radius:10px; margin:10px;'>
+                    <strong>{item}</strong><br>
+                    {b_amt:,}만원 → <strong>{a_amt:,}만원</strong><br>
+                    <span style='color:gray;'>({'보장 강화' if diff > 0 else '보장 축소'})</span>
                 </div>
             """
     elif isinstance(before, str) and isinstance(after, str):
         if before != after:
             color = "#d4f4dd" if after == "예" else "#ffe1e1"
             return f"""
-                <div style='background-color:{color}; padding:8px 12px; border-radius:8px; margin:6px; line-height:1.4;'>
-                    <div><strong>{item}</strong></div>
-                    <div>{before} → <strong>{after}</strong></div>
+                <div style='background-color:{color}; padding:15px; border-radius:10px; margin:10px;'>
+                    <strong>{item}</strong><br>
+                    {before} → <strong>{after}</strong>
                 </div>
             """
     return None
@@ -142,26 +142,19 @@ if compare_trigger:
     for m in msg_lines:
         st.info(m)
 
-    # 항목 변화 카드 시각화 (6열 나눔 + 전체 펼침)
+    # 항목 변화 카드 시각화
     st.subheader("✅ 보장 변화 요약")
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
-    cols = [col1, col2, col3, col4, col5, col6]
-    total_change_count = 0
+    col1, col2 = st.columns(2)
+    change_count = 0
 
-    for idx, (group, items) in enumerate(bojang_groups.items()):
-        group_cards = []
-        for item in items:
+    for group in bojang_groups:
+        for item in bojang_groups[group]:
             b = before_data.get(item)
             a = after_data.get(item)
             if b != a:
                 card_html = display_change_card(item, b, a)
                 if card_html:
-                    group_cards.append(card_html)
-                    total_change_count += 1
-        if group_cards:
-            container = cols[idx % 6]
-            with container.expander(f"📂 {group} 변화 항목 ({len(group_cards)}개)", expanded=True):
-                for html in group_cards:
-                    st.markdown(html, unsafe_allow_html=True)
+                    (col1 if change_count % 2 == 0 else col2).markdown(card_html, unsafe_allow_html=True)
+                    change_count += 1
 
-    st.caption(f"총 변화 항목 수: {total_change_count}개")
+    st.caption(f"총 변화 항목 수: {change_count}개")

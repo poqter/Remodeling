@@ -89,7 +89,6 @@ if st.sidebar.button("📊 비교 시작"):
     total_diff = before_total - after_total
     year_diff = before_years - after_years
 
-    # ✅ 보장 변화 요약 분석
     summary_dict = {}
     강화, 축소, 신규, 삭제 = 0, 0, 0, 0
 
@@ -99,7 +98,7 @@ if st.sidebar.button("📊 비교 시작"):
             b = before_data.get(item)
             a = after_data.get(item)
             if b != a:
-                if not b and a:
+                if (not b or (isinstance(b, dict) and (b.get("금액") or 0) == 0)) and isinstance(a, dict) and (a.get("금액") or 0) > 0:
                     group_lines.append(f"🟢 {item}: 신규 추가")
                     신규 += 1
                 elif b and not a:
@@ -115,12 +114,13 @@ if st.sidebar.button("📊 비교 시작"):
                     elif diff < 0:
                         group_lines.append(f"🟨 {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 축소)")
                         축소 += 1
+                elif isinstance(b, str) and isinstance(a, str):
+                    group_lines.append(f"🟣 {item}: {b} → {a} (형태 변경)")
         if group_lines:
             summary_dict[group] = group_lines
 
     총변화 = 강화 + 축소 + 신규 + 삭제
 
-    # 상단 요약
     st.subheader("📌 리모델링 요약")
     msg_lines = []
 
@@ -141,14 +141,11 @@ if st.sidebar.button("📊 비교 시작"):
     elif year_diff < 0:
         msg_lines.append(f"📆 **납입기간이 {abs(year_diff)}년 연장**되어 장기적인 플랜이 적용되었습니다.")
 
-    msg_lines.append(f"\n📊 **총 변화 항목: {총변화}개**")
-    msg_lines.append(f"🟦 보장 강화: {강화}개  |  🟨 보장 축소: {축소}개")
-    msg_lines.append(f"🟢 신규 추가: {신규}개  |  🔴 삭제: {삭제}개")
+    msg_lines.append(f"📊 **총 변화 항목: {총변화}개**  |  🟦 강화: {강화}개  |  🟨 축소: {축소}개  |  🟢 신규: {신규}개  |  🔴 삭제: {삭제}개")
 
     for m in msg_lines:
         st.info(m)
 
-    # 보장 변화 요약 - 1열 우선 출력
     st.subheader("✅ 보장 변화 요약")
     if summary_dict:
         left_col, right_col = st.columns(2)

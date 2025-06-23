@@ -36,9 +36,9 @@ def input_section(title, key_prefix, default_data=None):
     result = {}
 
     # 총 월 보험료 (원), 납입기간 (년), 총 납입 보험료 (선택, 원 단위)
-    result["총월보험료"] = st.sidebar.number_input(f"{title} - 총 월 보험료(원)", min_value=0, step=1000, key=f"{key_prefix}_월보험료")
-    result["납입기간"] = st.sidebar.number_input(f"{title} - 납입기간(년)", min_value=0, step=1, key=f"{key_prefix}_납입기간")
-    result["총납입보험료"] = st.sidebar.text_input(f"{title} - 총 납입 보험료 (원, 선택)", key=f"{key_prefix}_총납입")
+    result["총월보험료"] = st.sidebar.text_input(f"{title} - 총 월 보험료(원)", value="", key=f"{key_prefix}_월보험료")
+    result["납입기간"] = st.sidebar.text_input(f"{title} - 납입기간(년)", value="", key=f"{key_prefix}_납입기간")
+    result["총납입보험료"] = st.sidebar.text_input(f"{title} - 총 납입 보험료 (원, 선택)", value="", key=f"{key_prefix}_총납입")
 
     for group, items in bojang_groups.items():
         with st.sidebar.expander(f"📂 {group}"):
@@ -59,7 +59,7 @@ def input_section(title, key_prefix, default_data=None):
                     result[item] = {"금액": parse_amount(amt)}
     return result
 
-# --- 본문 실행 흐름 ---
+# --- 실행 영역 ---
 st.title("📋 보험 리모델링 전후 비교 시뮬레이터")
 
 st.sidebar.title("📝 보장 내용 입력")
@@ -110,8 +110,8 @@ if "before_data" in st.session_state and "after_data" in st.session_state:
                     요약문.append(f"📌 {item}: {b or '없음'} → {a or '없음'}")
 
     # 보험료 비교 출력
-    before_fee = before_data.get("총월보험료") or 0
-    after_fee = after_data.get("총월보험료") or 0
+    before_fee = parse_amount(before_data.get("총월보험료")) or 0
+    after_fee = parse_amount(after_data.get("총월보험료")) or 0
     fee_diff = after_fee - before_fee
 
     total_before = parse_amount(before_data.get("총납입보험료"))

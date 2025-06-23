@@ -5,10 +5,6 @@ import re
 # --- 앱 기본 설정 ---
 st.set_page_config(page_title="보험 리모델링 전후 비교", layout="wide")
 
-# --- 인쇄모드 설정 ---
-print_mode = st.sidebar.toggle("🖨️ 인쇄모드로 보기", value=False)
-요약표_표시 = st.sidebar.checkbox("변화 항목만 요약표 보기 (인쇄용)", value=True) if print_mode else False
-
 # --- 그룹별 항목 정의 ---
 bojang_groups = {
     "사망": ["일반사망", "질병사망", "재해(상해)사망"],
@@ -38,6 +34,12 @@ def parse_amount(text):
 def input_section(title, key_prefix, default_data=None):
     st.sidebar.subheader(title)
     result = {}
+
+    # 총 월 보험료, 납입기간, 총 납입 보험료
+    result["총월보험료"] = st.sidebar.number_input(f"{title} - 총 월 보험료(만원)", min_value=0, step=1, key=f"{key_prefix}_월보험료")
+    result["납입기간"] = st.sidebar.text_input(f"{title} - 납입기간", key=f"{key_prefix}_납입기간")
+    result["총납입보험료"] = st.sidebar.text_input(f"{title} - 총 납입 보험료 (선택)", key=f"{key_prefix}_총납입")
+
     for group, items in bojang_groups.items():
         with st.sidebar.expander(f"📂 {group}"):
             for item in items:
@@ -58,40 +60,31 @@ def input_section(title, key_prefix, default_data=None):
     return result
 
 # --- 본문 실행 흐름 ---
-if print_mode:
-    st.markdown("""
-        <style>
-        .block-container { padding: 20px; background-color: white; color: black; }
-        </style>
-    """, unsafe_allow_html=True)
-    st.title("🖨️ 보험 리모델링 비교 리포트 (인쇄용)")
-else:
-    st.title("📋 보험 리모델링 전후 비교 시뮬레이터")
+st.title("📋 보험 리모델링 전후 비교 시뮬레이터")
 
 st.sidebar.title("📝 보장 내용 입력")
 st.sidebar.markdown("금액 단위는 '만원', 실손은 가입 여부만 체크")
 
-if not print_mode:
-    if st.sidebar.button("🔄 전체 리셋"):
-        st.session_state.clear()
-        st.experimental_rerun()
+if st.sidebar.button("🔄 전체 리셋"):
+    st.session_state.clear()
+    st.experimental_rerun()
 
-    if "before_data" not in st.session_state:
-        st.session_state.before_data = input_section("1️⃣ 기존 보장 내용", "before")
-    else:
-        input_section("1️⃣ 기존 보장 내용", "before", st.session_state.before_data)
+if "before_data" not in st.session_state:
+    st.session_state.before_data = input_section("1️⃣ 기존 보장 내용", "before")
+else:
+    input_section("1️⃣ 기존 보장 내용", "before", st.session_state.before_data)
 
-    after_data = input_section("2️⃣ 제안 보장 내용", "after", st.session_state.before_data)
+after_data = input_section("2️⃣ 제안 보장 내용", "after", st.session_state.before_data)
 
-    if st.sidebar.button("🔍 비교 시작"):
-        st.session_state.after_data = after_data
-        st.success("비교 데이터가 저장되었습니다.")
+if st.sidebar.button("🔍 비교 시작"):
+    st.session_state.after_data = after_data
+    st.success("비교 데이터가 저장되었습니다.")
 
 if "before_data" in st.session_state and "after_data" in st.session_state:
     before_data = st.session_state.before_data
     after_data = st.session_state.after_data
 
-    강화수, 축소수, 총기존, 총제안 = 0, 0, 0, 0
+    강화수, 축소수, 총기존보장, 총제안보장 = 0, 0, 0, 0
     요약문 = []
 
     for group, items in bojang_groups.items():
@@ -99,8 +92,8 @@ if "before_data" in st.session_state and "after_data" in st.session_state:
             b, a = before_data.get(item), after_data.get(item)
             if isinstance(b, dict) and isinstance(a, dict):
                 b_amt, a_amt = b.get("금액") or 0, a.get("금액") or 0
-                총기존 += b_amt
-                총제안 += a_amt
+                총기존보장 += b_amt
+                총제안보장 += a_amt
                 if b_amt != a_amt:
                     if b_amt == 0:
                         요약문.append(f"📌 {item}: 신설 {a_amt}만원 ✅")
@@ -116,21 +109,29 @@ if "before_data" in st.session_state and "after_data" in st.session_state:
                 if b != a:
                     요약문.append(f"📌 {item}: {b or '없음'} → {a or '없음'}")
 
-    차이 = 총제안 - 총기존
+    # 보험료 비교 출력
+    before_fee = before_data.get("총월보험료") or 0
+    after_fee = after_data.get("총월보험료") or 0
+    fee_diff = after_fee - before_fee
+
+    total_before = parse_amount(before_data.get("총납입보험료"))
+    total_after = parse_amount(after_data.get("총납입보험료"))
+
     평가 = ""
-    if 차이 < 0:
-        평가 += f"💰 보험료가 {abs(차이)}만원 절감되었어요!  "
-    elif 차이 > 0:
-        평가 += f"📈 보장이 강화되며 보험료가 {차이}만원 증가했어요.  "
+    if fee_diff < 0:
+        평가 += f"💰 월 보험료가 {abs(fee_diff)}만원 줄었어요!  "
+    elif fee_diff > 0:
+        평가 += f"📈 월 보험료가 {fee_diff}만원 증가했어요.  "
     else:
-        평가 += "⚖️ 보험료는 동일합니다.  "
+        평가 += "⚖️ 월 보험료는 동일합니다.  "
+
+    if total_before and total_after:
+        if total_after < total_before:
+            평가 += f"📉 총 납입 보험료는 {total_before - total_after}만원 절감되었습니다.  "
+
     평가 += f"🛡️ 강화된 항목: {강화수}개, 🔻 축소된 항목: {축소수}개"
     st.success(평가)
 
     st.subheader("🔍 변화 요약")
     for line in 요약문:
         st.markdown(line)
-
-    if print_mode and 요약표_표시:
-        st.subheader("📋 변화 항목 표")
-        st.dataframe(pd.DataFrame(요약문, columns=["요약 내용"]))

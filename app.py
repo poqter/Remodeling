@@ -99,10 +99,15 @@ if st.sidebar.button("📊 비교 시작"):
             a = after_data.get(item)
             if b != a:
                 if (not b or (isinstance(b, dict) and (b.get("금액") or 0) == 0)) and isinstance(a, dict) and (a.get("금액") or 0) > 0:
-                    group_lines.append(f"🟢 {item}: 신규 추가")
+                    a_amt = a.get("금액") or 0
+                    group_lines.append(f"🟢 {item}: 0만원 → {a_amt:,}만원 (신규 추가)")
                     신규 += 1
                 elif b and not a:
-                    group_lines.append(f"🔴 {item}: 삭제")
+                    b_amt = b.get("금액") if isinstance(b, dict) else None
+                    if b_amt is not None:
+                        group_lines.append(f"🔴 {item}: {b_amt:,}만원 → 0만원 (삭제)")
+                    else:
+                        group_lines.append(f"🔴 {item}: 삭제")
                     삭제 += 1
                 elif isinstance(b, dict) and isinstance(a, dict):
                     b_amt = b.get("금액") or 0

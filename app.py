@@ -35,17 +35,14 @@ def input_section(title, key_prefix, default_data=None):
     st.sidebar.subheader(title)
     result = {}
 
-    # 총 월 보험료 및 납입기간: 기존 보장 내용을 제안 보장에 복사
-    if default_data:
-        default_fee = default_data.get("총월보험료", "")
-        default_term = default_data.get("납입기간", "")
-    else:
-        default_fee = ""
-        default_term = ""
+    def get_default_value(field):
+        if default_data and field in default_data:
+            return default_data.get(field, "")
+        return ""
 
-    result["총월보험료"] = st.sidebar.text_input(f"{title} - 총 월 보험료(원)", value=default_fee, key=f"{key_prefix}_월보험료")
-    result["납입기간"] = st.sidebar.text_input(f"{title} - 납입기간(년)", value=default_term, key=f"{key_prefix}_납입기간")
-    result["총납입보험료"] = st.sidebar.text_input(f"{title} - 총 납입 보험료 (원, 선택)", value=default_data.get("총납입보험료", "") if default_data else "", key=f"{key_prefix}_총납입")
+    result["총월보험료"] = st.sidebar.text_input(f"{title} - 총 월 보험료(원)", value=get_default_value("총월보험료"), key=f"{key_prefix}_월보험료")
+    result["납입기간"] = st.sidebar.text_input(f"{title} - 납입기간(년)", value=get_default_value("납입기간"), key=f"{key_prefix}_납입기간")
+    result["총납입보험료"] = st.sidebar.text_input(f"{title} - 총 납입 보험료 (원, 선택)", value=get_default_value("총납입보험료"), key=f"{key_prefix}_총납입")
 
     for group, items in bojang_groups.items():
         with st.sidebar.expander(f"📂 {group}"):
@@ -66,79 +63,59 @@ def input_section(title, key_prefix, default_data=None):
                     result[item] = {"금액": parse_amount(amt)}
     return result
 
-# --- 실행 영역 ---
-st.title("📋 보험 리모델링 전후 비교 시뮬레이터")
-
-st.sidebar.title("📝 보장 내용 입력")
-st.sidebar.markdown("금액 단위는 '만원', 실손은 가입 여부만 체크")
-
-if st.sidebar.button("🔄 전체 리셋"):
-    st.session_state.clear()
-    st.experimental_rerun()
+# --- 기존/제안 보장 입력 ---
+st.title("🔄 보험 리모델링 전후 비교 도구")
 
 if "before_data" not in st.session_state:
     st.session_state.before_data = input_section("1️⃣ 기존 보장 내용", "before")
 else:
-    input_section("1️⃣ 기존 보장 내용", "before", st.session_state.before_data)
+    st.session_state.before_data = input_section("1️⃣ 기존 보장 내용", "before", st.session_state.before_data)
 
-after_data = input_section("2️⃣ 제안 보장 내용", "after", st.session_state.before_data)
+st.session_state.after_data = input_section("2️⃣ 제안 보장 내용", "after", st.session_state.before_data)
 
-if st.sidebar.button("🔍 비교 시작"):
-    st.session_state.after_data = after_data
-    st.success("비교 데이터가 저장되었습니다.")
-
-if "before_data" in st.session_state and "after_data" in st.session_state:
+# --- 비교 버튼 ---
+if st.button("📊 비교 시작"):
     before_data = st.session_state.before_data
     after_data = st.session_state.after_data
 
-    강화수, 축소수, 총기존보장, 총제안보장 = 0, 0, 0, 0
-    요약문 = []
-
+    st.subheader("✅ 보장 변화 요약")
+    change_count = 0
     for group, items in bojang_groups.items():
         for item in items:
-            b, a = before_data.get(item), after_data.get(item)
+            b = before_data.get(item)
+            a = after_data.get(item)
+
             if isinstance(b, dict) and isinstance(a, dict):
                 b_amt, a_amt = b.get("금액") or 0, a.get("금액") or 0
-                총기존보장 += b_amt
-                총제안보장 += a_amt
                 if b_amt != a_amt:
-                    if b_amt == 0:
-                        요약문.append(f"📌 {item}: 신설 {a_amt}만원 ✅")
-                    elif a_amt == 0:
-                        요약문.append(f"📌 {item}: 삭제됨 ❌")
-                    elif a_amt > b_amt:
-                        요약문.append(f"📌 {item}: {b_amt} → {a_amt}만원 (강화 ✅)")
-                        강화수 += 1
-                    else:
-                        요약문.append(f"📌 {item}: {b_amt} → {a_amt}만원 (축소 ⚠️)")
-                        축소수 += 1
+                    change_count += 1
+                    st.markdown(f"- **{item}**: {b_amt:,}만원 → {a_amt:,}만원")
             elif isinstance(b, str) and isinstance(a, str):
                 if b != a:
-                    요약문.append(f"📌 {item}: {b or '없음'} → {a or '없음'}")
+                    change_count += 1
+                    st.markdown(f"- **{item}**: {b} → {a}")
 
-    # 보험료 비교 출력
+    # 보험료 비교 평가
     before_fee = parse_amount(before_data.get("총월보험료")) or 0
     after_fee = parse_amount(after_data.get("총월보험료")) or 0
-    fee_diff = after_fee - before_fee
+    before_total = parse_amount(before_data.get("총납입보험료")) or 0
+    after_total = parse_amount(after_data.get("총납입보험료")) or 0
 
-    total_before = parse_amount(before_data.get("총납입보험료"))
-    total_after = parse_amount(after_data.get("총납입보험료"))
+    fee_diff = before_fee - after_fee
+    total_diff = before_total - after_total
 
-    평가 = ""
-    if fee_diff < 0:
-        평가 += f"💰 월 보험료가 {abs(fee_diff):,}원 줄었어요!  "
-    elif fee_diff > 0:
-        평가 += f"📈 월 보험료가 {fee_diff:,}원 증가했어요.  "
+    st.markdown("---")
+    if fee_diff > 0:
+        msg = f"💸 월 보험료가 **{fee_diff:,}원 절감**되었습니다."
+    elif fee_diff < 0:
+        msg = f"📈 월 보험료가 **{abs(fee_diff):,}원 증가**했습니다."
     else:
-        평가 += "⚖️ 월 보험료는 동일합니다.  "
+        msg = "⚖️ 월 보험료는 변화가 없습니다."
 
-    if total_before and total_after:
-        if total_after < total_before:
-            평가 += f"📉 총 납입 보험료는 {total_before - total_after:,}원 절감되었습니다.  "
+    if total_diff > 0:
+        msg += f" 총 납입 보험료는 **{total_diff:,}원 절감**됩니다."
+    elif total_diff < 0:
+        msg += f" 총 납입 보험료는 **{abs(total_diff):,}원 증가**합니다."
 
-    평가 += f"🛡️ 강화된 항목: {강화수}개, 🔻 축소된 항목: {축소수}개"
-    st.success(평가)
-
-    st.subheader("🔍 변화 요약")
-    for line in 요약문:
-        st.markdown(line)
+    st.success(msg)
+    st.caption(f"총 변화 항목 수: {change_count}개")

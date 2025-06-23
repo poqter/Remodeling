@@ -82,14 +82,29 @@ if "before_data" in st.session_state and "after_data" in st.session_state:
     after_data = st.session_state.after_data
 
     강화수, 축소수, 총기존, 총제안 = 0, 0, 0, 0
-    for k in before_data:
-        b, a = before_data[k], after_data.get(k)
-        if isinstance(b, dict) and isinstance(a, dict):
-            b_amt, a_amt = b.get("금액") or 0, a.get("금액") or 0
-            총기존 += b_amt
-            총제안 += a_amt
-            if a_amt > b_amt: 강화수 += 1
-            elif a_amt < b_amt: 축소수 += 1
+    요약문 = []
+
+    for group, items in bojang_groups.items():
+        for item in items:
+            b, a = before_data.get(item), after_data.get(item)
+            if isinstance(b, dict) and isinstance(a, dict):
+                b_amt, a_amt = b.get("금액") or 0, a.get("금액") or 0
+                총기존 += b_amt
+                총제안 += a_amt
+                if b_amt != a_amt:
+                    if b_amt == 0:
+                        요약문.append(f"📌 {item}: 신설 {a_amt}만원 ✅")
+                    elif a_amt == 0:
+                        요약문.append(f"📌 {item}: 삭제됨 ❌")
+                    elif a_amt > b_amt:
+                        요약문.append(f"📌 {item}: {b_amt} → {a_amt}만원 (강화 ✅)")
+                        강화수 += 1
+                    else:
+                        요약문.append(f"📌 {item}: {b_amt} → {a_amt}만원 (축소 ⚠️)")
+                        축소수 += 1
+            elif isinstance(b, str) and isinstance(a, str):
+                if b != a:
+                    요약문.append(f"📌 {item}: {b or '없음'} → {a or '없음'}")
 
     차이 = 총제안 - 총기존
     평가 = ""
@@ -102,40 +117,10 @@ if "before_data" in st.session_state and "after_data" in st.session_state:
     평가 += f"🛡️ 강화된 항목: {강화수}개, 🔻 축소된 항목: {축소수}개"
     st.success(평가)
 
-    diff_list, all_list = [], []
-    for group, items in bojang_groups.items():
-        for item in items:
-            b, a = before_data.get(item), after_data.get(item)
-            if isinstance(b, str) and isinstance(a, str):
-                row = {"항목": item, "기존": b or "없음", "제안": a or "없음", "구분": group}
-                if b != a: diff_list.append(row)
-                all_list.append(row)
-            elif isinstance(b, dict) and isinstance(a, dict):
-                row = {
-                    "항목": item,
-                    "기존금액": b.get("금액"),
-                    "제안금액": a.get("금액"),
-                    "구분": group
-                }
-                if b != a: diff_list.append(row)
-                all_list.append(row)
+    st.subheader("🔍 변화 요약")
+    for line in 요약문:
+        st.markdown(line)
 
     if print_mode and 요약표_표시:
-        st.subheader("🔍 변화 항목 요약표")
-        st.dataframe(pd.DataFrame(diff_list))
-
-    if not print_mode:
-        st.subheader("🔍 변화 있는 항목")
-        for row in diff_list:
-            기존 = row.get("기존금액") or 0
-            제안 = row.get("제안금액") or 0
-            배경색 = "#e0f7e9" if 제안 > 기존 else "#ffe0e0"
-            st.markdown(f"""
-            <div style='border-radius:12px; padding:15px; margin-bottom:10px; background-color:{배경색}; border: 1px solid #ccc;'>
-                <strong>{row['항목']}</strong><br>
-                ✅ 기존: {기존}만원<br>
-                🔁 제안: {제안}만원
-            </div>""", unsafe_allow_html=True)
-
-        st.subheader("📋 전체 항목 보기")
-        st.dataframe(pd.DataFrame(all_list))
+        st.subheader("📋 변화 항목 표")
+        st.dataframe(pd.DataFrame(요약문, columns=["요약 내용"]))

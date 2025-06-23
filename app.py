@@ -35,18 +35,25 @@ def parse_amount(text):
         return None
 
 # --- 입력 폼 구성 ---
-def input_section(title, key_prefix):
+def input_section(title, key_prefix, default_data=None):
     st.sidebar.subheader(title)
     result = {}
     for group, items in bojang_groups.items():
         with st.sidebar.expander(f"📂 {group}"):
             for item in items:
                 full_key = f"{key_prefix}_{item}"
+                default_value = ""
+                if default_data:
+                    if isinstance(default_data.get(item), dict):
+                        default_value = default_data[item].get("금액", "")
+                    else:
+                        default_value = default_data.get(item, "")
+
                 if "실손" in item:
-                    val = st.radio(f"{item}", ["", "예", "아니오"], key=full_key, horizontal=True)
+                    val = st.radio(f"{item}", ["", "예", "아니오"], key=full_key, horizontal=True, index=["", "예", "아니오"].index(default_value) if default_value in ["", "예", "아니오"] else 0)
                     result[item] = val
                 else:
-                    amt = st.text_input(f"{item} (만원)", key=full_key)
+                    amt = st.text_input(f"{item} (만원)", value=str(default_value) if default_value else "", key=full_key)
                     result[item] = {"금액": parse_amount(amt)}
     return result
 
@@ -69,11 +76,14 @@ if not print_mode:
         st.session_state.clear()
         st.experimental_rerun()
 
-    before_data = input_section("1️⃣ 기존 보장 내용", "before")
-    after_data = input_section("2️⃣ 제안 보장 내용", "after")
+    if "before_data" not in st.session_state:
+        st.session_state.before_data = input_section("1️⃣ 기존 보장 내용", "before")
+    else:
+        input_section("1️⃣ 기존 보장 내용", "before", st.session_state.before_data)
+
+    after_data = input_section("2️⃣ 제안 보장 내용", "after", st.session_state.before_data)
 
     if st.sidebar.button("🔍 비교 시작"):
-        st.session_state.before_data = before_data
         st.session_state.after_data = after_data
         st.success("비교 데이터가 저장되었습니다.")
 

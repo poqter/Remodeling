@@ -89,33 +89,9 @@ if st.sidebar.button("\U0001F4CA 비교 시작"):
     total_diff = before_total - after_total
     year_diff = before_years - after_years
 
-    # 상단 평가 메시지
-    st.subheader("\U0001F4CC 리모델링 요약")
-    msg_lines = []
-
-    if fee_diff > 0:
-        msg_lines.append(f"\U0001F4B8 **월 보험료가 {fee_diff:,}원 절감**되어 경제적입니다.")
-    elif fee_diff < 0:
-        msg_lines.append(f"\U0001F4C8 **월 보험료가 {abs(fee_diff):,}원 증가**했지만 보장 강화가 목적일 수 있습니다.")
-    else:
-        msg_lines.append("⚖️ **월 보험료는 동일**합니다.")
-
-    if total_diff > 0:
-        msg_lines.append(f"\U0001F4C9 **총 납입 보험료도 {total_diff:,}원 줄어들어 효율적인 설계입니다.**")
-    elif total_diff < 0:
-        msg_lines.append(f"\U0001F4C8 **총 납입 보험료가 {abs(total_diff):,}원 늘어났습니다. 보장 항목과 비교해볼 필요가 있습니다.**")
-
-    if year_diff > 0:
-        msg_lines.append(f"⏱️ **납입기간이 {year_diff}년 단축**되어 부담이 줄었습니다.")
-    elif year_diff < 0:
-        msg_lines.append(f"\U0001F4C6 **납입기간이 {abs(year_diff)}년 연장**되어 장기적인 플랜이 적용되었습니다.")
-
-    for m in msg_lines:
-        st.info(m)
-
     # ✅ 보장 변화 요약 - 그룹별 2열 출력 (1열 먼저 출력 후 2열)
-    st.subheader("✅ 보장 변화 요약")
     summary_dict = {}
+    강화, 축소, 변경 = 0, 0, 0
 
     for group, items in bojang_groups.items():
         group_lines = []
@@ -129,13 +105,46 @@ if st.sidebar.button("\U0001F4CA 비교 시작"):
                     diff = a_amt - b_amt
                     if diff > 0:
                         group_lines.append(f"\U0001F53C {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 강화)")
+                        강화 += 1
                     elif diff < 0:
                         group_lines.append(f"\U0001F53D {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 축소)")
+                        축소 += 1
                 elif isinstance(b, str) and isinstance(a, str):
                     group_lines.append(f"\U0001F501 {item}: {b} → {a}")
+                    변경 += 1
         if group_lines:
             summary_dict[group] = group_lines
 
+    총변화 = sum(len(v) for v in summary_dict.values())
+
+    # 상단 평가 메시지
+    st.subheader("\U0001F4CC 리모델링 요약")
+    msg_lines = []
+
+    if fee_diff > 0:
+        msg_lines.append(f"💸 **월 보험료가 {fee_diff:,}원 절감**되어 경제적입니다.")
+    elif fee_diff < 0:
+        msg_lines.append(f"📈 **월 보험료가 {abs(fee_diff):,}원 증가**했지만 보장 강화가 목적일 수 있습니다.")
+    else:
+        msg_lines.append("⚖️ **월 보험료는 동일**합니다.")
+
+    if total_diff > 0:
+        msg_lines.append(f"📉 **총 납입 보험료도 {total_diff:,}원 줄어들어 효율적인 설계입니다.**")
+    elif total_diff < 0:
+        msg_lines.append(f"📈 **총 납입 보험료가 {abs(total_diff):,}원 늘어났습니다. 보장 항목과 비교해볼 필요가 있습니다.**")
+
+    if year_diff > 0:
+        msg_lines.append(f"⏱️ **납입기간이 {year_diff}년 단축**되어 부담이 줄었습니다.")
+    elif year_diff < 0:
+        msg_lines.append(f"\U0001F4C6 **납입기간이 {abs(year_diff)}년 연장**되어 장기적인 플랜이 적용되었습니다.")
+
+    msg_lines.append(f"\n🛠️ **총 변화 항목: {총변화}개**  |  🔼 보장 강화: {강화}개  |  🔽 보장 축소: {축소}개  |  🔁 실손/형태 변경: {변경}개")
+
+    for m in msg_lines:
+        st.info(m)
+
+    # 보장 변화 요약 출력
+    st.subheader("✅ 보장 변화 요약")
     if summary_dict:
         left_col, right_col = st.columns(2)
         groups = list(summary_dict.items())
@@ -146,5 +155,3 @@ if st.sidebar.button("\U0001F4CA 비교 시작"):
                 st.markdown(f"#### \U0001F4C2 {group}")
                 for line in lines:
                     st.markdown(f"- {line}")
-
-    st.caption(f"총 변화 항목 수: {sum(len(v) for v in summary_dict.values())}개")

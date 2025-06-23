@@ -39,19 +39,19 @@ def display_change_card(item, before, after):
             color = "#d4f4dd" if a_amt > b_amt else "#ffe1e1"
             diff = a_amt - b_amt
             return f"""
-                <div style='background-color:{color}; padding:8px 12px; border-radius:8px; margin:6px; line-height:1.4;'>
-                    <div><strong>{item}</strong></div>
-                    <div>{b_amt:,}만원 → <strong>{a_amt:,}만원</strong></div>
-                    <div style='color:gray; font-size:0.9em;'>({'보장 강화' if diff > 0 else '보장 축소'})</div>
+                <div style='background-color:{color}; padding:15px; border-radius:10px; margin:10px;'>
+                    <strong>{item}</strong><br>
+                    {b_amt:,}만원 → <strong>{a_amt:,}만원</strong><br>
+                    <span style='color:gray;'>({'보장 강화' if diff > 0 else '보장 축소'})</span>
                 </div>
             """
     elif isinstance(before, str) and isinstance(after, str):
         if before != after:
             color = "#d4f4dd" if after == "예" else "#ffe1e1"
             return f"""
-                <div style='background-color:{color}; padding:8px 12px; border-radius:8px; margin:6px; line-height:1.4;'>
-                    <div><strong>{item}</strong></div>
-                    <div>{before} → <strong>{after}</strong></div>
+                <div style='background-color:{color}; padding:15px; border-radius:10px; margin:10px;'>
+                    <strong>{item}</strong><br>
+                    {before} → <strong>{after}</strong>
                 </div>
             """
     return None
@@ -142,26 +142,19 @@ if compare_trigger:
     for m in msg_lines:
         st.info(m)
 
-    # 항목 변화 카드 시각화 (4열 나눔 + 전체 펼침)
+    # 항목 변화 카드 시각화
     st.subheader("✅ 보장 변화 요약")
-    col1, col2, col3, col4 = st.columns(4)
-    cols = [col1, col2, col3, col4]
-    total_change_count = 0
+    col1, col2 = st.columns(2)
+    change_count = 0
 
-    for idx, (group, items) in enumerate(bojang_groups.items()):
-        group_cards = []
-        for item in items:
+    for group in bojang_groups:
+        for item in bojang_groups[group]:
             b = before_data.get(item)
             a = after_data.get(item)
             if b != a:
                 card_html = display_change_card(item, b, a)
                 if card_html:
-                    group_cards.append(card_html)
-                    total_change_count += 1
-        if group_cards:
-            container = cols[idx % 4]
-            with container.expander(f"📂 {group} 변화 항목 ({len(group_cards)}개)", expanded=True):
-                for html in group_cards:
-                    st.markdown(html, unsafe_allow_html=True)
+                    (col1 if change_count % 2 == 0 else col2).markdown(card_html, unsafe_allow_html=True)
+                    change_count += 1
 
-    st.caption(f"총 변화 항목 수: {total_change_count}개")
+    st.caption(f"총 변화 항목 수: {change_count}개")

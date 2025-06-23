@@ -47,11 +47,7 @@ def input_section(title, key_prefix):
                     result[item] = val
                 else:
                     amt = st.text_input(f"{item} (만원)", key=full_key)
-                    nap_key = f"{full_key}_nap"
-                    ren_key = f"{full_key}_ren"
-                    nap = st.selectbox(f"납입기간 ({item})", ["", "10년납", "20년납", "30년납", "전기납"], key=nap_key)
-                    ren = st.selectbox(f"갱신여부 ({item})", ["", "갱신형", "비갱신형"], key=ren_key)
-                    result[item] = {"금액": parse_amount(amt), "납입": nap, "갱신": ren}
+                    result[item] = {"금액": parse_amount(amt)}
     return result
 
 # --- 본문 실행 흐름 ---
@@ -119,8 +115,6 @@ if "before_data" in st.session_state and "after_data" in st.session_state:
                     "항목": item,
                     "기존금액": b.get("금액"),
                     "제안금액": a.get("금액"),
-                    "납입기간": f"{b.get('납입')} → {a.get('납입')}" if b.get("납입") != a.get("납입") else b.get("납입"),
-                    "갱신여부": f"{b.get('갱신')} → {a.get('갱신')}" if b.get("갱신") != a.get("갱신") else b.get("갱신"),
                     "구분": group
                 }
                 if b != a: diff_list.append(row)
@@ -140,8 +134,7 @@ if "before_data" in st.session_state and "after_data" in st.session_state:
             <div style='border-radius:12px; padding:15px; margin-bottom:10px; background-color:{배경색}; border: 1px solid #ccc;'>
                 <strong>{row['항목']}</strong><br>
                 ✅ 기존: {기존}만원<br>
-                🔁 제안: {제안}만원<br>
-                📅 납입기간: {row.get('납입기간', '-')}, 🔄 갱신여부: {row.get('갱신여부', '-')}
+                🔁 제안: {제안}만원
             </div>""", unsafe_allow_html=True)
 
         st.subheader("📋 전체 항목 보기")

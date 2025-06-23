@@ -36,7 +36,9 @@ def input_section(title, key_prefix, default_data=None):
     result = {}
 
     def get_default_value(field):
-        return default_data.get(field, "") if default_data and field in default_data else ""
+        if default_data and field in default_data:
+            return default_data.get(field, "")
+        return ""
 
     result["총월보험료"] = st.sidebar.text_input(f"{title} - 총 월 보험료(원)", value=get_default_value("총월보험료"), key=f"{key_prefix}_월보험료")
     result["납입기간"] = st.sidebar.text_input(f"{title} - 납입기간(년)", value=get_default_value("납입기간"), key=f"{key_prefix}_납입기간")
@@ -61,7 +63,7 @@ def input_section(title, key_prefix, default_data=None):
                     result[item] = {"금액": parse_amount(amt)}
     return result
 
-# --- 타이틀 및 입력폼 ---
+# --- 기존/제안 보장 입력 ---
 st.title("🔄 보험 리모델링 전후 비교 도구")
 
 if "before_data" not in st.session_state:
@@ -72,9 +74,7 @@ else:
 st.session_state.after_data = input_section("2️⃣ 제안 보장 내용", "after", st.session_state.before_data)
 
 # --- 비교 실행 ---
-compare_trigger = st.sidebar.button("📊 비교 시작")
-
-if compare_trigger:
+if st.sidebar.button("📊 비교 시작"):
     before_data = st.session_state.before_data
     after_data = st.session_state.after_data
 
@@ -113,10 +113,12 @@ if compare_trigger:
     for m in msg_lines:
         st.info(m)
 
-    # 항목 변화 요약 텍스트 출력
-    st.subheader("✅ 보장 변화 텍스트 요약")
-    summary_lines = []
+    # ✅ 보장 변화 요약 - 그룹별 2열 출력
+    st.subheader("✅ 보장 변화 요약")
+    summary_dict = {}
+
     for group, items in bojang_groups.items():
+        group_lines = []
         for item in items:
             b = before_data.get(item)
             a = after_data.get(item)
@@ -126,14 +128,20 @@ if compare_trigger:
                     a_amt = a.get("금액") or 0
                     diff = a_amt - b_amt
                     if diff > 0:
-                        summary_lines.append(f"🔼 {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 강화)")
+                        group_lines.append(f"🔼 {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 강화)")
                     elif diff < 0:
-                        summary_lines.append(f"🔽 {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 축소)")
+                        group_lines.append(f"🔽 {item}: {b_amt:,}만원 → {a_amt:,}만원 (보장 축소)")
                 elif isinstance(b, str) and isinstance(a, str):
-                    summary_lines.append(f"🔁 {item}: {b} → {a}")
+                    group_lines.append(f"🔁 {item}: {b} → {a}")
+        if group_lines:
+            summary_dict[group] = group_lines
 
-    if summary_lines:
-        for line in summary_lines:
-            st.markdown(f"- {line}")
+    if summary_dict:
+        left_col, right_col = st.columns(2)
+        for idx, (group, lines) in enumerate(summary_dict.items()):
+            with (left_col if idx % 2 == 0 else right_col):
+                st.markdown(f"#### 📂 {group}")
+                for line in lines:
+                    st.markdown(f"- {line}")
 
-    st.caption(f"총 변화 항목 수: {len(summary_lines)}개")
+    st.caption(f"총 변화 항목 수: {sum(len(v) for v in summary_dict.values())}개")

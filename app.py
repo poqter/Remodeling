@@ -126,4 +126,16 @@ if st.sidebar.button("📊 비교 시작"):
                     (col1 if i % 2 == 0 else col2).markdown(card, unsafe_allow_html=True)
                     i += 1
 
-    st.caption(f"🔎 총 변화 항목 수: {sum(stats.values())}개 | 🟢 보장 강화: {stats['보장 강화']}  🔴 보장 축소: {stats['보장 축소']}  🆕 신규 추가: {stats['신규 추가']}  ❌ 삭제: {stats['삭제']}")
+    st.markdown("""
+        <div style='margin-top:10px; font-size:16px;'>
+            🔎 총 변화 항목 수: <b>{}</b>개<br>
+            🟢 보장 강화: <b>{}</b> 🔴 보장 축소: <b>{}</b><br>
+            🆕 신규 추가: <b>{}</b> ❌ 삭제: <b>{}</b>
+        </div>
+    """.format(
+        sum(stats.values()),
+        stats['보장 강화'],
+        stats['보장 축소'],
+        stats['신규 추가'],
+        stats['삭제']
+    ), unsafe_allow_html=True)
